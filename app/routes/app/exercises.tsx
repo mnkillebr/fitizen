@@ -7,10 +7,10 @@ import { DeleteButton, ErrorMessage, } from "~/components/form";
 import { createExercise, deleteExercise, getAllExercisesPaginated, updateExerciseName } from "~/models/exercise.server";
 import { z } from "zod";
 import { validateForm } from "~/utils/validation";
-import { useIsHydrated } from "~/utils/misc";
+import { useIsHydrated, useWindowSize } from "~/utils/misc";
 import clsx from "clsx";
 import { requireLoggedInUser } from "~/utils/auth.server";
-import { Exercise as ExerciseType, Role as RoleType } from "@prisma/client";
+import { BodyFocus, Exercise as ExerciseType, Role as RoleType } from "@prisma/client";
 import { useOpenDialog } from "~/components/Dialog";
 import { CheckCircleIcon, ChevronLeft, ChevronRight, PlusCircleIcon } from "images/icons";
 import { generateMuxThumbnailToken, generateMuxVideoToken } from "~/mux-tokens.server";
@@ -22,6 +22,7 @@ import { AppPagination } from "~/components/AppPagination";
 import { Video } from "lucide-react";
 import { useState } from "react";
 import { Skeleton } from "~/components/ui/skeleton";
+import { Label } from "~/components/ui/label";
 
 const updateExerciseNameSchema = z.object({
   exerciseId: z.string(),
@@ -41,10 +42,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const query = url.searchParams.get("q");
   const page = parseInt(url.searchParams.get("page") ?? "1");
+  const tagsQuery = url.searchParams.get("tags");
+  const tagsArray = tagsQuery ? tagsQuery.split(",") : undefined
+  const bodyFocus = tagsArray ? tagsArray.filter(tag => tag.includes(" body")).map(body => body.includes("upper") ? BodyFocus.upper : body.includes("lower") ? BodyFocus.lower : body.includes("full") ? BodyFocus.full : BodyFocus.core) : undefined
+  const tags = tagsArray ? tagsArray.filter(tag => !tag.includes(" body")) : undefined
   // console.log("page", page)
   const skip = (page - 1) * EXERCISE_ITEMS_PER_PAGE;
   // const exercises = await getAllExercises(query);
-  const pageExercises = await getAllExercisesPaginated(query, skip, EXERCISE_ITEMS_PER_PAGE) as { exercises: ExerciseType[]; count: number }
+  const pageExercises = await getAllExercisesPaginated(query, skip, EXERCISE_ITEMS_PER_PAGE, tags, bodyFocus) as { exercises: ExerciseType[]; count: number }
   const totalPages = Math.ceil(pageExercises.count / EXERCISE_ITEMS_PER_PAGE);
   const tokenMappedExercises = pageExercises ? pageExercises.exercises.map(ex_item => {
     const smartCrop = () => {
@@ -148,6 +153,7 @@ interface deleteExerciseFetcherType extends ActionFunctionArgs{
 }
 
 export default function ExerciseLibrary() {
+  const windowSize = useWindowSize();
   const { exercises, role, exercisesCount, totalPages, page } = useLoaderData<typeof loader>();
   const createExerciseFetcher = useFetcher();
   const navigation = useNavigation();
@@ -156,7 +162,7 @@ export default function ExerciseLibrary() {
   const isCreatingExercise = createExerciseFetcher.formData?.get("_action") === "createExercise";
 
   return (
-    <div className="px-1 pt-0 md:px-2 md:pt-0 pb-3 flex flex-col gap-y-4 bg-background h-[calc(100vh-4rem)]">
+    <div className="px-1 pt-0 md:px-2 md:pt-0 pb-2 flex flex-col bg-background h-[calc(100vh-4rem)]">
       {/* <div className="flex flex-col gap-y-4">
         <h1 className="text-lg font-semibold md:text-2xl text-foreground px-1">Exercises</h1>
         {role === "admin" ? (
@@ -174,16 +180,26 @@ export default function ExerciseLibrary() {
         ) : null}
       </div> */}
       {/* <div className="flex flex-col gap-y-4 xl:grid xl:grid-cols-2 xl:gap-4 snap-y snap-mandatory overflow-y-auto px-1 pb-1"> */}
-      <div className="flex flex-col gap-y-3 pb-6 snap-y snap-mandatory overflow-y-auto md:grid lg:grid-cols-2 xl:grid-cols-3 gap-x-3 px-1">
-        {exercises.map((ex_item) => (
-          <Exercise key={ex_item.id} exercise={ex_item} role={role} onViewExercise={() => {
-            openDialog(
-              <ExerciseDialog exercise={ex_item} />,
-              exerciseDialogOptions(ex_item.name)
-            )
-          }} />
-        ))}
-      </div>
+      {exercises.length ? (
+        <div
+          className={clsx(
+            "flex-1 flex flex-col gap-y-3 pb-2 snap-y snap-mandatory overflow-y-auto gap-x-3 px-1",
+            "lg:grid lg:grid-cols-2 xl:grid-cols-3",
+            windowSize && windowSize.height && windowSize.height > 900 ? "xl:grid-rows-3" : ""
+          )}
+        >
+          {exercises.map((ex_item) => (
+            <Exercise key={ex_item.id} exercise={ex_item} role={role} onViewExercise={() => {
+              openDialog(
+                <ExerciseDialog exercise={ex_item} />,
+                exerciseDialogOptions(ex_item.name)
+              )
+            }} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex-1 text-center"><Label>No Exercises</Label></div>
+      )}
       <AppPagination page={page} totalPages={totalPages} />
     </div>
   )
@@ -219,27 +235,31 @@ export function Exercise({ exercise, selectable, selectFn, selected, role, selec
   return isDeletingExercise ? null : (
     <div
       className={clsx(
-        "dark:bg-background-muted text-foreground dark:border dark:border-border-muted",
+        "max-h-fit dark:bg-background-muted text-foreground dark:border dark:border-border-muted",
         "rounded-lg flex flex-col snap-start shadow-md dark:shadow-border-muted",
         selectable ? "bg-background" : "bg-muted hover:shadow-primary"
       )}
     >
-      <div className="flex flex-col overflow-hidden justify-between w-full">
+      <div
+        className="h-80 sm:h-96 flex flex-col overflow-hidden justify-between w-full bg-cover bg-top rounded-lg"
+        style={{backgroundImage: `url(${exercise.thumbnail ?? "https://res.cloudinary.com/dqrk3drua/image/upload/f_auto,q_auto/cld-sample-3.jpg"})`}}
+        onLoad={() => setImageLoaded(true)}
+      >
         <div
-          className="relative group cursor-pointer aspect-[1.496]"
+          className="flex-1 relative group cursor-pointer"
           onClick={() => onViewExercise(exercise)}
         >
           {!imageLoaded && (
             <Skeleton className="absolute inset-0 w-full h-full" />
           )}
-          <img
+          {/* <img
             src={exercise.thumbnail ?? "https://res.cloudinary.com/dqrk3drua/image/upload/f_auto,q_auto/cld-sample-3.jpg"}
             className={clsx(
               "w-full rounded-t-lg transition-opacity duration-300 group-hover:opacity-85",
               imageLoaded ? "opacity-100" : "opacity-0"
             )}
             onLoad={() => setImageLoaded(true)}
-          />
+          /> */}
           <Video className="absolute w-full size-8 inset-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
         {/* <img
@@ -247,7 +267,12 @@ export function Exercise({ exercise, selectable, selectFn, selected, role, selec
           className={clsx("w-full rounded-t-lg flex-1", selectable ? "" : "cursor-pointer")}
           onClick={() => onViewExercise(exercise)}
         /> */}
-        <div className="flex p-4 justify-between items-center">
+        <div
+          className={clsx(
+            "flex-none flex p-4 justify-between items-center dark:bg-background-muted",
+            selectable ? "bg-background" : "bg-muted hover:shadow-primary"
+          )}
+        >
           <div className="flex flex-col w-full">
             {role === "admin" ? (
               <updateExerciseNameFetcher.Form method="post" className="hidden sm:flex justify-between">
@@ -293,7 +318,12 @@ export function Exercise({ exercise, selectable, selectFn, selected, role, selec
             ) : (
               <p className="font-bold w-full md:max-w-[calc(100%-2rem)] truncate">{exercise.name}</p>
             )}
-            <div className="flex divide-x divide-muted-foreground text-muted-foreground text-sm">
+            <div
+              className={clsx(
+                "flex text-muted-foreground text-sm",
+                (exercise.body && exercise.contraction && [...exercise.body, exercise.contraction].length > 1) || (exercise.body && exercise.body.length > 1) ? "divide-x divide-muted-foreground" : ""
+              )}
+            >
               {exercise.body.slice(0,2).map((body, body_idx) => (
                 <p key={body_idx} className={`${body_idx > 0 ? "px-1" : "pr-1"} text-xs capitalize`}>{`${body} body`}</p>
               ))}

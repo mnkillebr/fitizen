@@ -6,6 +6,7 @@ import { Button } from "~/components/ui/button";
 import { hash } from "~/cryptography.server";
 import { createIntroProgram, getAllPrograms } from "~/models/program.server";
 import { requireLoggedInUser } from "~/utils/auth.server";
+import { useWindowSize } from "~/utils/misc";
 import { validateForm } from "~/utils/validation";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -16,7 +17,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const query = url.searchParams.get("q");
   const programs = await getAllPrograms(query);
   let introProgram
-  if (!programs.length) {
+  if (!query && !programs.length) {
     introProgram = await createIntroProgram();
   }
   const programsEtag = hash(JSON.stringify(programs))
@@ -67,6 +68,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function Programs() {
+  const windowSize = useWindowSize();
   const { programs, role } = useLoaderData<typeof loader>();
   const matches = useMatches();
   const navigate = useNavigate();
@@ -84,19 +86,25 @@ export default function Programs() {
   }
 
   return (
-    <div className="pb-6 px-2 pt-0 md:px-3 md:pt-0 flex flex-col h-full gap-x-6 gap-y-4 bg-background">
+    <div className="pb-6 px-2 pt-0 md:px-3 md:pt-0 flex flex-col gap-x-6 gap-y-4 h-[calc(100vh-4rem)] bg-background">
       {/* <h1 className="text-lg font-semibold md:text-2xl text-foreground">Programs</h1> */}
       {role === "admin" ? (
         <Form method="post">
           <Button type="submit" name="_action" value="createIntroProgram">Create Intro Program</Button>
         </Form>
       ) : null}
-      <div className="flex-1 h-full flex flex-col gap-y-4 md:gap-4 md:grid md:grid-rows-2 lg:grid-cols-2 xl:grid-cols-3 snap-y snap-mandatory overflow-y-auto">
+      <div
+        className={clsx(
+          "flex-1 h-full flex flex-col gap-y-4 md:gap-4 snap-y snap-mandatory overflow-y-auto",
+          "lg:grid lg:grid-cols-2 xl:grid-cols-3",
+          windowSize && windowSize.height && windowSize.height > 900 ? "xl:grid-rows-3" : ""
+        )}
+      >
         {programs.map((program: any, program_idx: number) => (
           <div
             key={program_idx}
             className={clsx(
-              "relative flex-1 shadow-md cursor-pointer rounded-lg hover:shadow-primary",
+              "relative h-80 sm:h-96 xl:h-full shadow-md cursor-pointer rounded-lg hover:shadow-primary",
               "dark:border-border-muted dark:shadow-border-muted dark:border",
               "transition duration-150 bg-cover bg-top snap-start text-center",
               navigation.state === "loading" && navigation.location.pathname.includes(program.id) ? "animate-pulse duration-1000" : ""
@@ -114,7 +122,7 @@ export default function Programs() {
           </div>
         ))}
         <div
-          className="relative flex-1 shadow-md dark:shadow-border-muted dark:border dark:border-border-muted cursor-pointer rounded-lg hover:shadow-primary transition duration-150 bg-cover bg-center snap-start bg-slate-50 text-center"
+          className="relative h-80 sm:h-96 xl:h-full shadow-md dark:shadow-border-muted dark:border dark:border-border-muted cursor-pointer rounded-lg hover:shadow-primary transition duration-150 bg-cover bg-center snap-start bg-slate-50 text-center"
           style={{backgroundImage: `url(https://res.cloudinary.com/dqrk3drua/image/upload/f_auto,q_auto/v1/fitizen/s2j4mlhnvppquh8j9jk9)`, opacity: 0.6}}
         >
           <div className="absolute top-2 left-2 text-white p-2 flex flex-col items-start">

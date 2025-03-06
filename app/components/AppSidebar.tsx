@@ -17,11 +17,14 @@ import {
   SidebarRail,
 } from "~/components/ui/sidebar"
 import { SidebarSearchForm } from "./AppSidebarSearch"
-import { SidebarHeaderButton } from "./AppSidebarHeader"
+import { SidebarHeaderButton } from "./AppSidebarHeaderButton"
 import { User } from "@prisma/client";
+import { useLocation } from "@remix-run/react"
+import { SidebarSearchFilterForm } from "./AppSideBarSearchFilter"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User;
+  tags: string[];
   // darkModeEnabled: boolean;
   navLinks: {
     title: string
@@ -30,13 +33,20 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   }[]
 }
 
-export function AppSidebar({ navLinks, user, ...props }: AppSidebarProps) {
+export function AppSidebar({ navLinks, tags, user, ...props }: AppSidebarProps) {
+  const location = useLocation();
+  const showSearch =
+    location.pathname === "/app/workouts" ||
+    location.pathname === "/app/exercises" ||
+    location.pathname === "/app/programs"
+  const showFilter = location.pathname === "/app/exercises"
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         {/* <TeamSwitcher teams={data.teams} /> */}
         <SidebarHeaderButton />
-        <SidebarSearchForm />
+        {showSearch && <SidebarSearchForm />}
+        {showFilter && <SidebarSearchFilterForm placeholder="Filter exercises by tag ..." items={tags} />}
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navLinks} />

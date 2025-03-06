@@ -58,8 +58,9 @@ const navLinks = [
 
 interface DashboardLayoutProps {
   user: User;
+  tags: string[];
 }
-export function AppDashboardLayout({ user }: DashboardLayoutProps) {
+export function AppDashboardLayout({ tags, user }: DashboardLayoutProps) {
   const location = useLocation();
   const matches = useMatches();
   const headerTitle = useMemo(() => {
@@ -119,11 +120,11 @@ export function AppDashboardLayout({ user }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
-      <AppSidebar user={user} navLinks={navLinks} />
+      <AppSidebar user={user} navLinks={navLinks} tags={tags} />
       <SidebarInset className="max-w-8xl mx-auto">
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 justify-between">
           <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
+            <SidebarTrigger className="-ml-1 hover:text-primary" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>

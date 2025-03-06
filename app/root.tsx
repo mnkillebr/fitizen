@@ -30,6 +30,7 @@ import { AppDashboardLayout } from "./components/DashboardLayout";
 import { validateForm } from "./utils/validation";
 import { z } from "zod";
 import { DarkModeToggle } from "./components/DarkModeToggle";
+import { getAllBodyFocusTypes, getUniqueExerciseTags } from "./models/exercise.server";
 
 const navigation = [
   { name: "Settings", href: "settings" },
@@ -84,7 +85,13 @@ export const links: LinksFunction = () => {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getCurrentUser(request);
-  return { user, isLoggedIn: user !== null }
+  const exerciseTags = await getUniqueExerciseTags();
+  const bodyFocus = await getAllBodyFocusTypes();
+  return {
+    user,
+    isLoggedIn: user !== null,
+    exerciseTags: [...exerciseTags, ...bodyFocus.map(focus => `${focus} body`)],
+  }
 }
 
 const themeSchema = z.object({
@@ -169,7 +176,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { user } = useLoaderData<typeof loader>();
+  const { exerciseTags, user } = useLoaderData<typeof loader>();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const matches = useMatches();
   const inAppRoute = matches.map(m => m.id).includes("routes/app");
@@ -179,7 +186,7 @@ export default function App() {
   }
 
   if (inAppRoute) {
-    return <AppDashboardLayout user={user} />
+    return <AppDashboardLayout user={user} tags={exerciseTags} />
   }
 
   return (

@@ -11,6 +11,7 @@ import clsx from "clsx";
 import { requireLoggedInUser } from "~/utils/auth.server";
 import { ArrowRight, ChevronLeft } from "images/icons";
 import { useState } from "react";
+import { useWindowSize } from "~/utils/misc";
 
 const deleteWorkoutSchema = z.object({
   workoutId: z.string(),
@@ -34,7 +35,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const workouts = await getAllUserWorkouts(user.id, query);
 
   let sampleWorkout
-  if (!workouts.length) {
+  if (!query && !workouts.length) {
     sampleWorkout = await createWorkoutWithExercise();
   }
   const allWorkouts = sampleWorkout ? [...workouts, sampleWorkout] : workouts
@@ -127,6 +128,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function Workouts() {
+  const windowSize = useWindowSize();
   const data = useLoaderData<typeof loader>();
   const createWorkoutFetcher = useFetcher();
   const [searchParams] = useSearchParams();
@@ -209,7 +211,13 @@ export default function Workouts() {
           Create Workout
         </Link>
       </div>
-      <div className="flex flex-col gap-y-4 md:gap-4 md:grid md:grid-rows-2 lg:grid-cols-2 xl:grid-cols-3 snap-y snap-mandatory overflow-y-auto px-2 pb-6">
+      <div
+        className={clsx(
+          "flex-1 flex flex-col gap-y-4 md:gap-4 snap-y snap-mandatory overflow-y-auto px-2 pb-6",
+          "lg:grid lg:grid-cols-2 xl:grid-cols-3 xl:grid-rows-3",
+          windowSize && windowSize.height && windowSize.height > 900 ? "xl:grid-rows-3" : ""
+        )}
+      >
         {data.workouts.map((workout) => (
           <Workout
             key={workout.id}
@@ -244,17 +252,20 @@ function Workout({ workout, role, loading }: WorkoutProps) {
     <Link
       to={workout.id}
       className={clsx(
-        "bg-muted text-foreground hover:shadow-primary rounded-lg flex flex-col snap-start shadow-md",
+        "h-80 sm:h-96 bg-muted text-foreground hover:shadow-primary rounded-lg flex flex-col snap-start shadow-md",
         "dark:bg-background-muted dark:border dark:border-border-muted dark:shadow-border-muted",
         loading ? "animate-pulse" : ""
       )}
     >
-      <div className="flex flex-col overflow-hidden">
-        <img
+      <div
+        className="flex-1 flex flex-col-reverse bg-cover bg-top rounded-lg overflow-hidden"
+        style={{backgroundImage: `url("https://res.cloudinary.com/dqrk3drua/image/upload/f_auto,q_auto/cld-sample-3.jpg")`}}
+      >
+        {/* <img
           src="https://res.cloudinary.com/dqrk3drua/image/upload/f_auto,q_auto/cld-sample-3.jpg"
-          className={clsx("w-full rounded-t-lg")}
-        />
-        <div className="flex justify-between">
+          className={clsx("flex-1 w-full rounded-t-lg")}
+        /> */}
+        <div className="flex-none flex justify-between bg-muted dark:bg-background-muted">
           <div className="flex flex-col p-4">
             <p className="font-bold max-w-40 text-foreground xs:max-w-64 truncate sm:overflow-visible md:overflow-hidden">{workout.name}</p>
             <p className="text-sm max-w-40 xs:max-w-64 truncate sm:overflow-visible md:overflow-hidden">{workout.description}</p>

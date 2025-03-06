@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { BodyFocus, Prisma } from "@prisma/client";
 import db from "~/db.server";
 
 export function getAllExercises(query: string | null) {
@@ -20,16 +20,27 @@ export function getAllExercises(query: string | null) {
   });
 };
 
-export async function getAllExercisesPaginated(query: string | null, skip: number | undefined, take: number | undefined) {
+export async function getAllExercisesPaginated(query: string | null, skip?: number, take?: number, tags?: string[], body?: BodyFocus[]) {
   try {
+    const whereClause: any = {
+      name: {
+        contains: query || "",
+        mode: "insensitive",
+      }
+    };
+    if (tags && tags.length > 0) {
+      whereClause.tags = {
+        hasSome: tags
+      };
+    }
+    if (body && body.length > 0) {
+      whereClause.body = {
+        hasSome: body
+      };
+    }
     const [exercises, count] = await Promise.all([
       db.exercise.findMany({
-        where: {
-          name: {
-            contains: query || "",
-            mode: "insensitive",
-          },
-        },
+        where: whereClause,
         orderBy: [
           { createdAt: "desc" },
           { name: "desc" },
@@ -38,12 +49,7 @@ export async function getAllExercisesPaginated(query: string | null, skip: numbe
         take,
       }),
       db.exercise.count({
-        where: {
-          name: {
-            contains: query || "",
-            mode: "insensitive",
-          },
-        },
+        where: whereClause,
       })
     ])
     return { exercises, count }
@@ -114,3 +120,20 @@ export function updateExerciseName(exerciseId: string, exerciseName: string) {
     }
   });
 };
+
+type RawTagResult = {
+  tag: string;
+}[]
+
+export async function getUniqueExerciseTags(): Promise<string[]> {
+  const exerciseTagsResult = await db.$queryRaw<RawTagResult>`
+    SELECT DISTINCT unnest(tags) as tag
+    FROM "Exercise"
+    ORDER BY tag
+  `
+  return exerciseTagsResult.map((item: { tag: string }) => item.tag);
+}
+
+export function getAllBodyFocusTypes() {
+  return Object.values(BodyFocus);
+}

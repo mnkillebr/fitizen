@@ -33,7 +33,7 @@ export function DarkModeToggle() {
 
   return (
     <TooltipProvider>
-      <Tooltip delayDuration={200}>
+      <Tooltip delayDuration={300}>
         <TooltipTrigger className="*:mr-5 *:hover:text-primary">
           {isDark ? <MoonStar size={20} onClick={toggleDarkMode}/> : <Sun size={20} onClick={toggleDarkMode}/>}
         </TooltipTrigger>
