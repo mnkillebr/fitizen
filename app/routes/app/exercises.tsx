@@ -10,7 +10,7 @@ import { validateForm } from "~/utils/validation";
 import { useIsHydrated, useWindowSize } from "~/utils/misc";
 import clsx from "clsx";
 import { requireLoggedInUser } from "~/utils/auth.server";
-import { BodyFocus, Exercise as ExerciseType, Role as RoleType } from "@prisma/client";
+import { BodyFocus, ContractionType, Exercise as ExerciseType, Role as RoleType } from "@prisma/client";
 import { useOpenDialog } from "~/components/Dialog";
 import { CheckCircleIcon, ChevronLeft, ChevronRight, PlusCircleIcon } from "images/icons";
 import { generateMuxThumbnailToken, generateMuxVideoToken } from "~/mux-tokens.server";
@@ -44,12 +44,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const page = parseInt(url.searchParams.get("page") ?? "1");
   const tagsQuery = url.searchParams.get("tags");
   const tagsArray = tagsQuery ? tagsQuery.split(",") : undefined
-  const bodyFocus = tagsArray ? tagsArray.filter(tag => tag.includes(" body")).map(body => body.includes("upper") ? BodyFocus.upper : body.includes("lower") ? BodyFocus.lower : body.includes("full") ? BodyFocus.full : BodyFocus.core) : undefined
-  const tags = tagsArray ? tagsArray.filter(tag => !tag.includes(" body")) : undefined
+  const bodyFocus = tagsArray && tagsArray.filter(tag => tag.includes(" body")).length ? tagsArray.filter(tag => tag.includes(" body")).map(body => body.includes("upper") ? BodyFocus.upper : body.includes("lower") ? BodyFocus.lower : body.includes("full") ? BodyFocus.full : BodyFocus.core) : undefined
+  const contraction = tagsArray && tagsArray.filter(tag => tag.includes(" contraction")).length ? tagsArray.filter(tag => tag.includes(" contraction")).map(conType => conType.includes("isometric") ? ContractionType.isometric : ContractionType.isotonic)[0] : undefined
+  const tags = tagsArray ? tagsArray.filter(tag => !tag.includes(" body") && !tag.includes(" contraction")) : undefined
   // console.log("page", page)
   const skip = (page - 1) * EXERCISE_ITEMS_PER_PAGE;
   // const exercises = await getAllExercises(query);
-  const pageExercises = await getAllExercisesPaginated(query, skip, EXERCISE_ITEMS_PER_PAGE, tags, bodyFocus) as { exercises: ExerciseType[]; count: number }
+  const pageExercises = await getAllExercisesPaginated(query, skip, EXERCISE_ITEMS_PER_PAGE, tags, bodyFocus, contraction) as { exercises: ExerciseType[]; count: number }
   const totalPages = Math.ceil(pageExercises.count / EXERCISE_ITEMS_PER_PAGE);
   const tokenMappedExercises = pageExercises ? pageExercises.exercises.map(ex_item => {
     const smartCrop = () => {

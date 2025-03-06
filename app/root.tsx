@@ -30,7 +30,7 @@ import { AppDashboardLayout } from "./components/DashboardLayout";
 import { validateForm } from "./utils/validation";
 import { z } from "zod";
 import { DarkModeToggle } from "./components/DarkModeToggle";
-import { getAllBodyFocusTypes, getUniqueExerciseTags } from "./models/exercise.server";
+import { getAllBodyFocusTypes, getAllContractionTypes, getUniqueExerciseTags } from "./models/exercise.server";
 
 const navigation = [
   { name: "Settings", href: "settings" },
@@ -87,10 +87,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getCurrentUser(request);
   const exerciseTags = await getUniqueExerciseTags();
   const bodyFocus = await getAllBodyFocusTypes();
+  const contraction = await getAllContractionTypes();
   return {
     user,
     isLoggedIn: user !== null,
-    exerciseTags: [...exerciseTags, ...bodyFocus.map(focus => `${focus} body`)],
+    exerciseTags: [...exerciseTags, ...bodyFocus.map(focus => `${focus} body`), ...contraction.map(conType => `${conType} contraction`)],
   }
 }
 

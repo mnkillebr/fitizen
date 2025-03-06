@@ -1,4 +1,4 @@
-import { BodyFocus, Prisma } from "@prisma/client";
+import { BodyFocus, ContractionType, Prisma } from "@prisma/client";
 import db from "~/db.server";
 
 export function getAllExercises(query: string | null) {
@@ -20,7 +20,7 @@ export function getAllExercises(query: string | null) {
   });
 };
 
-export async function getAllExercisesPaginated(query: string | null, skip?: number, take?: number, tags?: string[], body?: BodyFocus[]) {
+export async function getAllExercisesPaginated(query: string | null, skip?: number, take?: number, tags?: string[], body?: BodyFocus[], contraction?: ContractionType) {
   try {
     const whereClause: any = {
       name: {
@@ -37,6 +37,9 @@ export async function getAllExercisesPaginated(query: string | null, skip?: numb
       whereClause.body = {
         hasSome: body
       };
+    }
+    if (contraction) {
+      whereClause.contraction = contraction;
     }
     const [exercises, count] = await Promise.all([
       db.exercise.findMany({
@@ -136,4 +139,8 @@ export async function getUniqueExerciseTags(): Promise<string[]> {
 
 export function getAllBodyFocusTypes() {
   return Object.values(BodyFocus);
+}
+
+export function getAllContractionTypes() {
+  return Object.values(ContractionType);
 }
