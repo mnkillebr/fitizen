@@ -4,13 +4,13 @@ import { HeartIcon as HeartSolid, PlusIcon, TrashIcon, ArrowDownTrayIcon, Bars3I
 import { ActionFunctionArgs, LoaderFunctionArgs, data } from "@remix-run/node";
 import { useFetcher, useLoaderData, useNavigation } from "@remix-run/react";
 import { DeleteButton, ErrorMessage, } from "~/components/form";
-import { createExercise, deleteExercise, getAllExercisesPaginated, updateExerciseName } from "~/models/exercise.server";
+import { createExercise, deleteExercise, getAllContractionTypes, getAllEquipmentTypes, getAllExercisesPaginated, getAllJointTypes, getAllLiftTypes, getAllMovementPatterns, getAllMovementPlanes, getAllMuscleGroups, getAllStretchTypes, updateExerciseName } from "~/models/exercise.server";
 import { z } from "zod";
 import { validateForm } from "~/utils/validation";
 import { useIsHydrated, useWindowSize } from "~/utils/misc";
 import clsx from "clsx";
 import { requireLoggedInUser } from "~/utils/auth.server";
-import { BodyFocus, ContractionType, Exercise as ExerciseType, Role as RoleType } from "@prisma/client";
+import { BodyFocus, ContractionType, Equipment, Exercise as ExerciseType, Joint, LiftType, MovementPattern, MovementPlane, MuscleGroup, Role as RoleType, StretchType } from "@prisma/client";
 import { useOpenDialog } from "~/components/Dialog";
 import { CheckCircleIcon, ChevronLeft, ChevronRight, PlusCircleIcon } from "images/icons";
 import { generateMuxThumbnailToken, generateMuxVideoToken } from "~/mux-tokens.server";
@@ -45,12 +45,46 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const tagsQuery = url.searchParams.get("tags");
   const tagsArray = tagsQuery ? tagsQuery.split(",") : undefined
   const bodyFocus = tagsArray && tagsArray.filter(tag => tag.includes(" body")).length ? tagsArray.filter(tag => tag.includes(" body")).map(body => body.includes("upper") ? BodyFocus.upper : body.includes("lower") ? BodyFocus.lower : body.includes("full") ? BodyFocus.full : BodyFocus.core) : undefined
-  const contraction = tagsArray && tagsArray.filter(tag => tag.includes(" contraction")).length ? tagsArray.filter(tag => tag.includes(" contraction")).map(conType => conType.includes("isometric") ? ContractionType.isometric : ContractionType.isotonic)[0] : undefined
-  const tags = tagsArray ? tagsArray.filter(tag => !tag.includes(" body") && !tag.includes(" contraction")) : undefined
+  const contractions = tagsArray ? tagsArray.filter(tag => getAllContractionTypes().includes(tag)) as ContractionType[] : undefined
+  const equipment = tagsArray ? tagsArray.filter(tag => getAllEquipmentTypes().includes(tag)) as Equipment[] : undefined
+  const joints = tagsArray ? tagsArray.filter(tag => getAllJointTypes().includes(tag)) as Joint[] : undefined
+  const lifts = tagsArray ? tagsArray.filter(tag => getAllLiftTypes().includes(tag)) as LiftType[] : undefined
+  const muscles = tagsArray ? tagsArray.filter(tag => getAllMuscleGroups().includes(tag)) as MuscleGroup[] : undefined
+  const patterns = tagsArray ? tagsArray.filter(tag => getAllMovementPatterns().includes(tag)) as MovementPattern[] : undefined
+  const planes = tagsArray ? tagsArray.filter(tag => getAllMovementPlanes().includes(tag)) as MovementPlane[] : undefined
+  const stretches = tagsArray ? tagsArray.filter(tag => getAllStretchTypes().includes(tag)) as StretchType[] : undefined
+  const tags = tagsArray
+    ? tagsArray.filter(
+        (tag: string) =>
+          !tag.includes(" body")
+            && !getAllContractionTypes().includes(tag)
+            && !getAllEquipmentTypes().includes(tag)
+            && !getAllJointTypes().includes(tag)
+            && !getAllLiftTypes().includes(tag)
+            && !getAllMuscleGroups().includes(tag)
+            && !getAllMovementPatterns().includes(tag)
+            && !getAllMovementPlanes().includes(tag)
+            && !getAllStretchTypes().includes(tag)
+      )
+    : undefined
   // console.log("page", page)
   const skip = (page - 1) * EXERCISE_ITEMS_PER_PAGE;
   // const exercises = await getAllExercises(query);
-  const pageExercises = await getAllExercisesPaginated(query, skip, EXERCISE_ITEMS_PER_PAGE, tags, bodyFocus, contraction) as { exercises: ExerciseType[]; count: number }
+  const pageExercises = await getAllExercisesPaginated(
+    query,
+    skip,
+    EXERCISE_ITEMS_PER_PAGE,
+    tags,
+    bodyFocus,
+    contractions,
+    equipment,
+    joints,
+    lifts,
+    muscles,
+    patterns,
+    planes,
+    stretches
+  ) as { exercises: ExerciseType[]; count: number }
   const totalPages = Math.ceil(pageExercises.count / EXERCISE_ITEMS_PER_PAGE);
   const tokenMappedExercises = pageExercises ? pageExercises.exercises.map(ex_item => {
     const smartCrop = () => {

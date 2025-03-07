@@ -1,4 +1,4 @@
-import { BodyFocus, ContractionType, Prisma } from "@prisma/client";
+import { BalanceLevel, BalanceType, BodyFocus, ContractionType, Equipment, Joint, LiftType, MovementPattern, MovementPlane, MuscleGroup, Prisma, StretchType } from "@prisma/client";
 import db from "~/db.server";
 
 export function getAllExercises(query: string | null) {
@@ -20,7 +20,21 @@ export function getAllExercises(query: string | null) {
   });
 };
 
-export async function getAllExercisesPaginated(query: string | null, skip?: number, take?: number, tags?: string[], body?: BodyFocus[], contraction?: ContractionType) {
+export async function getAllExercisesPaginated(
+  query: string | null,
+  skip?: number,
+  take?: number,
+  tags?: string[],
+  body?: BodyFocus[],
+  contractions?: ContractionType[],
+  equipment?: Equipment[],
+  joints?: Joint[],
+  lifts?: LiftType[],
+  muscles?: MuscleGroup[],
+  patterns?: MovementPattern[],
+  planes?: MovementPlane[],
+  stretches?: StretchType[],
+) {
   try {
     const whereClause: any = {
       name: {
@@ -38,8 +52,45 @@ export async function getAllExercisesPaginated(query: string | null, skip?: numb
         hasSome: body
       };
     }
-    if (contraction) {
-      whereClause.contraction = contraction;
+    if (contractions && contractions.length > 0) {
+      whereClause.contraction = {
+        in: contractions
+      };
+    }
+    if (equipment && equipment.length > 0) {
+      whereClause.equipment = {
+        hasSome: equipment
+      };
+    }
+    if (joints && joints.length > 0) {
+      whereClause.joint = {
+        hasSome: joints
+      };
+    }
+    if (lifts && lifts.length > 0) {
+      whereClause.lift = {
+        in: lifts
+      };
+    }
+    if (muscles && muscles.length > 0) {
+      whereClause.muscles = {
+        hasSome: muscles
+      };
+    }
+    if (patterns && patterns.length > 0) {
+      whereClause.pattern = {
+        hasSome: patterns
+      };
+    }
+    if (planes && planes.length > 0) {
+      whereClause.plane = {
+        hasSome: planes
+      };
+    }
+    if (stretches && stretches.length > 0) {
+      whereClause.stretch = {
+        in: stretches
+      };
     }
     const [exercises, count] = await Promise.all([
       db.exercise.findMany({
@@ -138,9 +189,45 @@ export async function getUniqueExerciseTags(): Promise<string[]> {
 }
 
 export function getAllBodyFocusTypes() {
-  return Object.values(BodyFocus);
+  return Object.values(BodyFocus) as string[];
 }
 
 export function getAllContractionTypes() {
-  return Object.values(ContractionType);
+  return Object.values(ContractionType) as string[];
+}
+
+export function getAllEquipmentTypes() {
+  return Object.values(Equipment) as string[];
+}
+
+export function getAllJointTypes() {
+  return Object.values(Joint) as string[];
+}
+
+export function getAllLiftTypes() {
+  return Object.values(LiftType) as string[];
+}
+
+export function getAllMuscleGroups() {
+  return Object.values(MuscleGroup) as string[];
+}
+
+export function getAllMovementPatterns() {
+  return Object.values(MovementPattern) as string[];
+}
+
+export function getAllMovementPlanes() {
+  return Object.values(MovementPlane) as string[];
+}
+
+export function getAllStretchTypes() {
+  return Object.values(StretchType) as string[];
+}
+
+export function getAllBalanceTypes() {
+  return Object.values(BalanceType) as string[];
+}
+
+export function getAllBalanceLevels() {
+  return Object.values(BalanceLevel) as string[];
 }

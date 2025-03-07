@@ -30,7 +30,7 @@ import { AppDashboardLayout } from "./components/DashboardLayout";
 import { validateForm } from "./utils/validation";
 import { z } from "zod";
 import { DarkModeToggle } from "./components/DarkModeToggle";
-import { getAllBodyFocusTypes, getAllContractionTypes, getUniqueExerciseTags } from "./models/exercise.server";
+import { getAllBalanceLevels, getAllBalanceTypes, getAllBodyFocusTypes, getAllContractionTypes, getAllEquipmentTypes, getAllJointTypes, getAllLiftTypes, getAllMovementPatterns, getAllMovementPlanes, getAllMuscleGroups, getAllStretchTypes, getUniqueExerciseTags } from "./models/exercise.server";
 
 const navigation = [
   { name: "Settings", href: "settings" },
@@ -86,12 +86,35 @@ export const links: LinksFunction = () => {
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getCurrentUser(request);
   const exerciseTags = await getUniqueExerciseTags();
-  const bodyFocus = await getAllBodyFocusTypes();
-  const contraction = await getAllContractionTypes();
+  const bodyFocus = getAllBodyFocusTypes();
+  const contraction = getAllContractionTypes();
+  const equipment = getAllEquipmentTypes()
+  const joints = getAllJointTypes()
+  const liftTypes = getAllLiftTypes()
+  const muscleGroups = getAllMuscleGroups()
+  const movementPatterns = getAllMovementPatterns()
+  const movementPlanes = getAllMovementPlanes()
+  const stretchTypes = getAllStretchTypes()
+  const balanceTypes = getAllBalanceTypes()
+  const balanceLevels = getAllBalanceLevels()
+  
   return {
     user,
     isLoggedIn: user !== null,
-    exerciseTags: [...exerciseTags, ...bodyFocus.map(focus => `${focus} body`), ...contraction.map(conType => `${conType} contraction`)],
+    exerciseTags: [
+      ...exerciseTags,
+      ...bodyFocus.map(focus => `${focus} body`),
+      ...contraction,
+      ...equipment,
+      ...joints,
+      ...liftTypes,
+      ...muscleGroups,
+      ...movementPatterns,
+      ...movementPlanes,
+      ...stretchTypes,
+      ...balanceTypes,
+      ...balanceLevels,
+    ],
   }
 }
 
