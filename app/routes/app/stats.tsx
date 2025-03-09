@@ -406,7 +406,7 @@ export default function Stats() {
               <Card>
                 <CardContent className="flex flex-col items-center">
                   <div className="relative">
-                    <div className="flex justify-center font-bold text-[64px] sm:text-[80px] md:text-[96px]">{0}</div>
+                    <div className="flex justify-center font-bold text-[64px] sm:text-[80px] md:text-[96px]">{calculateWeeklyStreak([...userProgramLogs, ...userWorkoutLogs])}</div>
                     {/* <div className="absolute inset-[90px] inset-x-2/3 text-sm">weeks</div> */}
                   </div>
                   <div className="font-semibold leading-none tracking-tight">Weekly Streak</div>
@@ -430,7 +430,7 @@ export default function Stats() {
         <div className="hidden md:grid grid-cols-3 gap-2 w-full">
           <Card>
             <CardContent className="flex flex-col items-center">
-              <div className="flex justify-center font-bold text-[64px] sm:text-[80px] md:text-[96px]">{0}</div>
+              <div className="flex justify-center font-bold text-[64px] sm:text-[80px] md:text-[96px]">{calculateAverageEntriesPerWeek([...userProgramLogs, ...userWorkoutLogs], new Date(2025,1,8)).toFixed(1)}</div>
               <div className="font-semibold leading-none tracking-tight">Weekly Average</div>
               <div className="text-muted-foreground text-sm mt-1.5">Average number of workouts completed per week</div>
             </CardContent>
@@ -438,7 +438,7 @@ export default function Stats() {
           <Card>
             <CardContent className="flex flex-col items-center">
               <div className="relative">
-                <div className="flex justify-center font-bold text-[64px] sm:text-[80px] md:text-[96px]">{0}</div>
+                <div className="flex justify-center font-bold text-[64px] sm:text-[80px] md:text-[96px]">{calculateWeeklyStreak([...userProgramLogs, ...userWorkoutLogs], new Date(2025,1,8))}</div>
                 {/* <div className="absolute inset-[90px] inset-x-2/3 text-sm">weeks</div> */}
               </div>
               <div className="font-semibold leading-none tracking-tight">Weekly Streak</div>

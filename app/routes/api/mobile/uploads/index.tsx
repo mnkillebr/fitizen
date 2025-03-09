@@ -1,9 +1,35 @@
-import { ActionFunctionArgs, data } from '@remix-run/node';
+import { ActionFunctionArgs, data, unstable_composeUploadHandlers, unstable_createMemoryUploadHandler, unstable_parseMultipartFormData } from '@remix-run/node';
 import { hash } from '~/cryptography.server';
+import { updateUserProfilePhoto } from '~/models/user.server';
 import { requireAuth } from '~/utils/auth.server';
+import { CloudinaryUploadResult, deleteCloudinaryAsset, uploadToCloudinary } from '~/utils/cloudinary.server';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await requireAuth(request);
+  const user = await requireAuth(request);
+
+  if (request.headers.get("Content-Type")?.includes("multipart/form-data")) {
+    const uploadHandler = unstable_composeUploadHandlers(
+      uploadToCloudinary,
+      unstable_createMemoryUploadHandler()
+    );
+    const avatarFormData = await unstable_parseMultipartFormData(request, uploadHandler);
+    const resultString = avatarFormData.get("file") as string | null;
+    if (!resultString) {
+      return data({ error: "Upload failed" }, { status: 500 });
+    }
+    try {
+      const result = JSON.parse(resultString) as CloudinaryUploadResult;
+      const currentPublicId = user.profilePhotoId
+      const updatedProfilePhoto = await updateUserProfilePhoto(user.id, result.url, result.public_id)
+      if (updatedProfilePhoto && currentPublicId) {
+        deleteCloudinaryAsset(currentPublicId)
+      }
+      return { success: true, url: result.url, filename: result.filename };
+    } catch (error) {
+      return data({ error: "Failed to process upload result" }, { status: 500 });
+    }
+  }
+
   const method = request.method;
 
   switch (method) {

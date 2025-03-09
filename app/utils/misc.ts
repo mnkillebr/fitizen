@@ -256,7 +256,7 @@ export function calculateWeeklyStreak(entries: DateEntry[], currentDate: Date = 
     }
   });
 
-  return maxStreak;
+  return currentStreak;
 }
 
 export function calculateAverageEntriesPerWeek(entries: DateEntry[], currentDate: Date = new Date()): number {
