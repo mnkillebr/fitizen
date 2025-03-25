@@ -1,7 +1,7 @@
 import { ActionFunctionArgs, data, LoaderFunctionArgs, redirect, unstable_composeUploadHandlers, unstable_createMemoryUploadHandler, unstable_parseMultipartFormData } from "@remix-run/node";
 import { Form, useActionData, useFetcher, useLoaderData, useNavigation } from "@remix-run/react";
 import { requireLoggedInUser } from "~/utils/auth.server";
-import { Camera } from "lucide-react";
+import { Camera, LoaderCircle, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
@@ -66,6 +66,7 @@ interface userSettingsFormType extends ActionFunctionArgs{
 
 interface fitnessProfileFormType extends ActionFunctionArgs{
   updatedAt?: string;
+  raw_output?: string;
   errors?: {
     [key: string]: any;
   }
@@ -167,6 +168,60 @@ export async function action({ request }: ActionFunctionArgs) {
         (errors) => data({ errors }, { status: 400 })
       )
     }
+    case "generateParQProgram": {
+      try {
+        const programFormData = new FormData()
+        programFormData.append("height", formData.get("userHeight") as string)
+        programFormData.append("currentWeight", formData.get("currentWeight") as string)
+        programFormData.append("targetWeight", formData.get("targetWeight") as string)
+        formData.get("fat-loss") && programFormData.append("goal_fatLoss", formData.get("fat-loss") as string)
+        formData.get("endurance") && programFormData.append("goal_endurance", formData.get("endurance") as string)
+        formData.get("build-muscle") && programFormData.append("goal_buildMuscle", formData.get("build-muscle") as string)
+        formData.get("lose-weight") && programFormData.append("goal_loseWeight", formData.get("lose-weight") as string)
+        formData.get("improve-balance") && programFormData.append("goal_improveBalance", formData.get("improve-balance") as string)
+        formData.get("improve-flexibility") && programFormData.append("goal_improveFlexibility", formData.get("improve-flexibility") as string)
+        formData.get("learn-new-skills") && programFormData.append("goal_learnNewSkills", formData.get("learn-new-skills") as string)
+        programFormData.append("parq_heartCondition", formData.get("heart-condition") as string)
+        programFormData.append("parq_chestPainActivity", formData.get("chest-pain-activity") as string)
+        programFormData.append("parq_chestPainNoActivity:", formData.get("chest-pain-no-activity") as string)
+        programFormData.append("parq_balanceConsciousness", formData.get("balance-consciousness") as string)
+        programFormData.append("parq_boneJoint", formData.get("bone-joint") as string)
+        programFormData.append("parq_bloodPressureMeds", formData.get("blood-pressure-meds") as string)
+        programFormData.append("parq_otherReasons", formData.get("other-reasons") as string)
+        formData.get("occupation") && programFormData.append("operational_occupation", formData.get("occupation") as string)
+        programFormData.append("operational_extendedSitting", formData.get("extended-sitting") as string)
+        programFormData.append("operational_repetitiveMovements", formData.get("repetitive-movements") as string)
+        formData.get("explanation_repetitive-movements") && programFormData.append("operational_explanation_repetitiveMovements", formData.get("explanation_repetitive-movements") as string)
+        programFormData.append("operational_heelShoes", formData.get("heel-shoes") as string)
+        programFormData.append("operational_mentalStress", formData.get("mental-stress") as string)
+        programFormData.append("recreational_physicalActivities", formData.get("physical-activities") as string)
+        formData.get("explanation_physical-activities") && programFormData.append("recreational_explanation_physicalActivities", formData.get("explanation_physical-activities") as string)
+        programFormData.append("recreational_hobbies", formData.get("hobbies") as string)
+        formData.get("explanation_hobbies") && programFormData.append("recreational_explanation_hobbies", formData.get("explanation_hobbies") as string)
+        programFormData.append("medical_injuriesPain", formData.get("injuries-pain") as string)
+        formData.get("explanation_injuries-pain") && programFormData.append("medical_explanation_injuriesPain", formData.get("explanation_injuries-pain") as string)
+        programFormData.append("medical_surgeries", formData.get("surgeries") as string)
+        formData.get("explanation_surgeries") && programFormData.append("medical_explanation_surgeries", formData.get("explanation_surgeries") as string)
+        programFormData.append("medical_chronicDisease", formData.get("chronic-disease") as string)
+        formData.get("explanation_chronic-disease") && programFormData.append("medical_explanation_chronicDisease", formData.get("explanation_chronic-disease") as string)
+        programFormData.append("medical_medications", formData.get("medications") as string)
+        formData.get("explanation_medications") && programFormData.append("medical_explanation_medications", formData.get("explanation_medications") as string)
+        const clientParams = new URLSearchParams();
+        clientParams.set("name", `${user.firstName} ${user.lastName}`);
+        clientParams.set("age", "69");
+        clientParams.set("email", user.email);
+        const programResponse = await fetch(`http://127.0.0.1:8000/programs/parq_program?${clientParams.toString()}`, {
+          method: "post",
+          body: programFormData,
+        })
+        const programData = await programResponse.json()
+        return programData
+        // return null
+      }
+      catch (error) {
+        return data({ error: "Failed to generate program"}, { status: 500 })
+      }
+    }
     case "updateFitnessProfile": {
       return validateForm(
         formData,
@@ -247,7 +302,6 @@ export default function Profile() {
   const fitnessProfileFetcher = useFetcher<fitnessProfileFormType>();
   const actionData = useActionData<userSettingsFormType>();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
@@ -255,6 +309,13 @@ export default function Profile() {
     lastName: user.lastName,
     email: user.email,
   });
+  
+  const txtDownloadRef = useRef<HTMLAnchorElement>(null);
+  // const mdDownloadRef = useRef<HTMLAnchorElement>(null);
+
+  const isGeneratingProgram =
+    fitnessProfileFetcher.formData?.get("_action") === "generateParQProgram" &&
+    (fitnessProfileFetcher.state === "submitting" || fitnessProfileFetcher.state === "loading")
 
   const isUpdatingProfile = navigation.state === "submitting";
   const isUploadingImage = avatarFetcher.state === "submitting";
@@ -281,12 +342,35 @@ export default function Profile() {
   }, [avatarFetcher])
 
   useEffect(() => {
-    if (fitnessProfileFetcher.data) {
+    const updateFitnessProfile = fitnessProfileFetcher.formData?.get("_action") === "updateFitnessProfile"
+    const generateProgram = fitnessProfileFetcher.formData?.get("_action") === "generateParQProgram"
+    if (fitnessProfileFetcher.data && updateFitnessProfile) {
       if (fitnessProfileFetcher.data?.errors) {
         toast.error("Failed to update fitness profile")
       } else if (fitnessProfileFetcher.data) {
         toast.success("Fitness profile saved.")
       }
+    } else if (fitnessProfileFetcher.data && generateProgram) {
+      const content = fitnessProfileFetcher.data.raw_output
+      const textBlob = new Blob([content], { type: "text/plain" });
+      // const mdBlob = new Blob([content], { type: "text/markdown" });
+
+      const txtUrl = URL.createObjectURL(textBlob);
+      // const mdUrl = URL.createObjectURL(mdBlob);
+      if (txtDownloadRef.current) {
+        txtDownloadRef.current.href = txtUrl;
+        txtDownloadRef.current.download = "ai_generated_program.txt";
+        txtDownloadRef.current.click();
+      }
+      // if (mdDownloadRef.current) {
+      //   mdDownloadRef.current.href = mdUrl;
+      //   mdDownloadRef.current.download = "ai_generated_program.md";
+      //   mdDownloadRef.current.click();
+      // }
+      return () => {
+        URL.revokeObjectURL(txtUrl);
+        // URL.revokeObjectURL(mdUrl);
+      };
     }
   }, [fitnessProfileFetcher])
   // Check if form values are different from initial data
@@ -452,12 +536,22 @@ export default function Profile() {
           </Card>
         </TabsContent>
         <TabsContent value="fitness">
-          <fitnessProfileFetcher.Form method="post" className="flex flex-col gap-y-4">
+          <fitnessProfileFetcher.Form method="post" className="flex flex-col gap-y-4 mb-4">
             <div className="text-muted-foreground -mt-2">Keep your fitness profile up to date.</div>
-            <ScrollArea className="h-[calc(100vh-16rem)] lg:h-[calc(100vh-12.5rem)]">
+            <ScrollArea className="h-[calc(100vh-17rem)] lg:h-[calc(100vh-13.5rem)]">
               <FitnessSettings fitnessProfile={user.fitnessProfile ?? {}} />
             </ScrollArea>
-            <div className="flex justify-end">
+            <a ref={txtDownloadRef} style={{ display: "none" }} />
+            {/* <a ref={mdDownloadRef} style={{ display: "none" }} /> */}
+            <div className="flex gap-x-3 justify-end">
+              <Button
+                type="submit"
+                name="_action"
+                value="generateParQProgram"
+                disabled={isGeneratingProgram}
+              >
+                {isGeneratingProgram ? <LoaderCircle className="animate-spin"/> : <Sparkles />} {isGeneratingProgram ? "Generating" : "Generate"} Par-Q Program
+              </Button>
               <Button
                 type="submit"
                 name="_action"
