@@ -95,6 +95,7 @@ export const SidebarSearchFilterForm: React.FC<FormComponentProps> = ({ placehol
                         .filter((tag) => selectedTags.includes(tag.value))
                         .map((tag) => (
                           <div
+                            key={tag.value}
                             className={clsx(
                               "w-fit flex gap-1 items-center border dark:border-border-muted rounded-full text-xs",
                               "py-0.5 pl-2 pr-1.5 hover:cursor-pointer select-none font-semibold text-foreground peer"
@@ -102,7 +103,7 @@ export const SidebarSearchFilterForm: React.FC<FormComponentProps> = ({ placehol
                             onClick={(event) => {
                               event.preventDefault()
                               const newValue = selectedTags.filter((item: string) => item !== tag.value)
-                              if (!newValue.length) {
+                              if (!newValue.length && location.search) {
                                 const query = searchParams.get("q")
                                 navigate(`${location.pathname}${query ? `?q=${query}` : ""}`)
                               }
