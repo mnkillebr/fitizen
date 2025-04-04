@@ -78,7 +78,7 @@ export function sendMagicLinkEmail(link: string, email: string) {
       html,
     })
   } else {
-    console.log(link);
+    // console.log(link);
     return link
   }
 }
