@@ -183,7 +183,7 @@ export async function action({ request }: ActionFunctionArgs) {
         formData.get("learn-new-skills") && programFormData.append("goal_learnNewSkills", formData.get("learn-new-skills") as string)
         programFormData.append("parq_heartCondition", formData.get("heart-condition") as string)
         programFormData.append("parq_chestPainActivity", formData.get("chest-pain-activity") as string)
-        programFormData.append("parq_chestPainNoActivity:", formData.get("chest-pain-no-activity") as string)
+        programFormData.append("parq_chestPainNoActivity", formData.get("chest-pain-no-activity") as string)
         programFormData.append("parq_balanceConsciousness", formData.get("balance-consciousness") as string)
         programFormData.append("parq_boneJoint", formData.get("bone-joint") as string)
         programFormData.append("parq_bloodPressureMeds", formData.get("blood-pressure-meds") as string)
